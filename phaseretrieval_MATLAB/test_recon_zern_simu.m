@@ -23,7 +23,7 @@ abType2 = 'defocus';
 abValue1 = 0.2; % um
 abValue2 = -0.2; % um
 fileFolderIn = '.\DataForTest\';
-fileFolderOut = '.\DataForTest\imSample2_noisefree\';
+fileFolderOut = '.\DataForTest\imSample2_test\';
 nType = 'none';
 if isequal(exist(fileFolderOut, 'dir'),7)
     disp(['output folder:' fileFolderOut]);
@@ -83,7 +83,7 @@ WriteTifStack(img0, [fileFolderOut 'Image_groundtruth.tif'], 32);
 WriteTifStack(imgs, [fileFolderOut 'Image_phasediversity.tif'], 32);
 WriteTifStack(PSFs, [fileFolderOut 'PSF_phasediversity.tif'], 32);
 WriteTifStack(imgEstimate, [fileFolderOut 'Image_estimated.tif'], 32);
-WriteTifStack(imgs, [fileFolderOut 'Wavefront_phasediversity.tif'], 32);
+WriteTifStack(waveFronts, [fileFolderOut 'Wavefront_phasediversity.tif'], 32);
 [Sx, Sy] = size(img0);
 [r, theta, idx] = def_pupilcoor(Sx, pixelSize, lambda, NA);
 waveFront = zeros(Sx, Sy);
