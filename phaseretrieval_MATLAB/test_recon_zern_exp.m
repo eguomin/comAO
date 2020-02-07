@@ -1,26 +1,41 @@
 % Test phase retrieval on experimental phase diversity images
-
+% by Min Guo
+% Jan 30, 2020;
+% Modifications: 
+% 1) incorporate corrections for mismatch between MATLAB and HASO
+% Feb. 07, 2020
 clear all;
 close all;
+warning('off','all')
 tic;
-fileFolderIn = '.\DataForTest\';
-fileFolderOut = '.\DataForTest\Output\';
-fileImgIn = [fileFolderIn,'img.tif'];
-fileZernIn = [fileFolderIn,'zern.dat'];
-imgNum = 3; % 2 or 3
-repNum = 1;
-zernCoeffOrder = 21; % 4th (15), 5th(21), 6th(28) and 7th(36) orders
+fileFolderIn = 'D:\Data\20200207_PR\';
+fileName = 'beads_2';
+% fileFolderOut = [fileFolderIn,fileName, '\'];
+fileImgIn = [fileFolderIn, fileName,'.tif'];
+fileZernIn = [fileFolderIn,fileName,'_note_2PicsPerPhase.txt'];
+imgNum = 5; % 2 or 3
+fileFolderOut = [fileFolderIn,fileName, num2str(imgNum),'\'];
+repNum = 2;
+zernCoeffOrder = 15; % 4th (15), 5th(21), 6th(28) and 7th(36) orders
 flagExcludeTilt = 1; % exclude tilts
+flagExcludeDefocus = 0; % exclude defocus
+rotAng = -75;
+flagShowInput = 0;
+
 flagGPU = 1;
 if(flagExcludeTilt==1)
     pIn = 4:zernCoeffOrder; % 1: piston; 2:tilt X; 3: tilt Y;
 else
     pIn = 2:zernCoeffOrder;
 end
+if(flagExcludeDefocus==1)
+    pIn = 5:zernCoeffOrder; % 1: piston; 2:tilt X; 3: tilt Y;
+end
+
 zernNum = length(pIn);
-iteration = 5; % note: more zernike orders --> more iterations? *******
-gamma = 1e-14;
-zernSteps = [15 pIn(zernNum)] - pIn(1) + 1; % upboosting steps,e.g., 4th (15), 5th(21), 6th(28) and 7th(36) orders
+iteration = 10; % note: more zernike orders --> more iterations? *******
+gamma = 1e-6;
+zernSteps = [11 pIn(zernNum)] - pIn(1) + 1; % upboosting steps,e.g., 4th (15), 5th(21), 6th(28) and 7th(36) orders
 
 pixelSize = 0.096; % um
 lambda = 0.550; % um
@@ -33,19 +48,18 @@ else
     disp(['output folder created:' fileFolderOut]);
 end
 filePreImgs = [fileFolderOut 'imgs_pre.tif']; % image: pre rotation and cropping
-fileImgs = [fileFolderOut 'imgs.tif']; % image
 
 disp('...Preprocessing images...');
 % % % input images
-rotAng = 72;
-cropSize = 512;
-bgValue = 1000;
-imgsRaw = double(ReadTifStack(fileImgSample));
+% rotAng = -73;
+cropSize = 384;
+bgValue = 290;
+imgsRaw = double(ReadTifStack(fileImgIn));
 [Sx1, Sy1, rawNum] = size(imgsRaw);
 % average if acquistion repeated for each phase
 if(repNum>1)
     aveNum = round(rawNum/repNum);
-    imgsAve = zeros(Sx1,Sy1,rawNum);
+    imgsAve = zeros(Sx1,Sy1,aveNum);
     for i = 1:aveNum
         imgAve = zeros(Sx1,Sy1);
         for j = 1:repNum
@@ -65,8 +79,13 @@ WriteTifStack(imgsAve, filePreImgs, 32);
 % rotation and crop
 imgs = zeros(cropSize,cropSize,imgNum);
 for i = 1:imgNum
-    img = imrotate(imgs(:,:,i),rotAng,'bilinear');
-    [Sox,Soy] = round((Size(img)-cropSize)/2+1);
+    imgIn = imgsAve(:,:,i);
+%     imgIn = flipud(imgIn);
+    img = imrotate(imgIn,rotAng,'bilinear');
+    img = flipud(img);
+    Soxy = round((size(img)-cropSize)/2+1);
+    Sox = Soxy(1);
+    Soy = Soxy(2);
     imgs(:,:,i) = img(Sox:Sox+cropSize-1,Soy:Soy+cropSize-1);
 end
 imgs = imgs - bgValue;
@@ -74,13 +93,20 @@ imgs = max(imgs,0.01);
 WriteTifStack(imgs, [fileFolderOut 'Image_phasediversity.tif'], 32);
 
 % % % phases and zernike coefficients
-coeffsRaw = importdata('test_zern.txt');
+coeffsRaw = -importdata(fileZernIn);
 [phaseNum, zernRawNum] = size(coeffsRaw);
 if(phaseNum<imgNum)
     error('phase number is less than image number');
 end
-if((zernRawNum + 1) < zernCoeffOrder)
+if(zernRawNum < (zernCoeffOrder-1))
     error('raw zernike number is less than configured zernike number');
+end
+% coeffsRaw(2:3,:) = coeffsRaw(4:5,:);
+coeffsSigns = ones(1,zernRawNum); % to correct the mismatch between MATLAB and HASO
+coeffsSigns([2,5, 7, 10, 12, 15]) = -1; % need further update
+% zernSigns = -zernSigns;
+for i = 1:phaseNum
+    coeffsRaw(i,:) = coeffsRaw(i,:).*coeffsSigns;
 end
 % Imagine Opitc convetion to Fringe convention
 % 1st: tilt <--> 1st: piston
@@ -89,10 +115,16 @@ if(flagExcludeTilt==1)
 else
     pStart = 1;
 end
+if(flagExcludeDefocus==1)
+    pStart = 4;
+end
+pEnd = zernCoeffOrder-1;
 % unknown aberration:
-coeffsInitial = coeffsRaw(1,pStart:zernCoeffOrder);
+coeffsInitial = coeffsRaw(1,pStart:pEnd);
+coeffsInitial = coeffsInitial';
 % phase diversity:
-coeffs_delta = coeffsRaw(2:imgNum,pStart:zernCoeffOrder);
+coeffs_delta = coeffsRaw(2:imgNum,pStart:pEnd);
+coeffs_delta = coeffs_delta';
 coeffs_all = [coeffsInitial';coeffs_delta';]';
 
 cTime1 = toc;
@@ -100,7 +132,7 @@ disp(['... ... time cost: ', num2str(cTime1)]);
 % reconstruct zernike coefficients: estimate the unknown aberration
 disp('...Reconstructing Zernike coefficients...');
 devNum = 1;
-gpuDevice(devNum);
+% gpuDevice(devNum);
 [cEstimate, imgEstimate, rePar] = recon_zern(imgs, pIn, coeffs_delta, gamma, iteration, zernSteps, pixelSize, lambda, NA, flagGPU);
 cTime2 = toc;
 disp(['... ... time cost: ', num2str(cTime2-cTime1)]);
@@ -111,6 +143,7 @@ disp(['Processing completed!!! Total time cost:', num2str(cTime2)]);
 img0 = squeeze(imgs(:,:,1));
 [~, PSFs, waveFronts] = gen_simu_images(img0, pIn, coeffs_all, pixelSize, lambda, NA, 'none');
 WriteTifStack(PSFs, [fileFolderOut 'PSF_phasediversity.tif'], 32);
+WriteTifStack(waveFronts, [fileFolderOut 'Wavefront_phasediversity.tif'], 32);
 WriteTifStack(imgEstimate, [fileFolderOut 'Image_estimated.tif'], 32);
 [Sx, Sy] = size(img0);
 [r, theta, idx] = def_pupilcoor(Sx, pixelSize, lambda, NA);
@@ -120,16 +153,19 @@ WriteTifStack(waveFront, [fileFolderOut 'Wavefront_estimated.tif'], 32);
 % export zernike coefficient to txt file: imagine optic convention
 % 1st: piston <--> 1st: tilt
 coeffsOut = zeros(1,zernRawNum);
-coeffsOut(1,pStart:zernCoeffOrder) = cEstimate;
-fileID = fopen('zern_estimated.txt','w');
-fprintf(fileID,'%f\t',coeffsOut);
+coeffsOut(1,pStart:pEnd) = cEstimate;
+coeffsOut = coeffsOut.*coeffsSigns;
+fileID = fopen([fileFolderOut, 'zernCoeffs_estimated.txt'],'w');
+fprintf(fileID,'%f\t',coeffsOut');
 fclose(fileID);
-fileID = fopen('zern_estimated_negative.txt','w');
-fprintf(fileID,'%f\t',-coeffsOut);
+fileID = fopen([fileFolderOut, 'zernCoeffs_estimated_negative.txt'],'w');
+fprintf(fileID,'%f\t',-coeffsOut');
 fclose(fileID);
 
 % check results
 xi = 1: Sx;
+
+if(flagShowInput == 1)
 a = 20; % size of PSF images for show
 F1 = figure; % input images and phases
 figure(F1), subplot(imgNum,3,1);
@@ -153,7 +189,7 @@ figure(F1), subplot(imgNum,3,4);
 pcolor(xi,xi,waveFronts(:,:,2)), shading interp
 axis square, Fc = colorbar;
 xlabel(Fc,'\mum');
-title('Wavefront:phase1');
+title('Add:phase1');
 figure(F1); subplot(imgNum,3,5);
 PSF = PSFs(:,:,2);
 PSF = PSF/max(PSF(:));
@@ -166,25 +202,28 @@ img = img/max(img(:));
 imshow(img,[]),colorbar;
 title('Image:phase1');
 
-if(imgNum ==3)
-    figure(F1), subplot(imgNum,3,7);
-    pcolor(xi,xi,waveFronts(:,:,3)), shading interp
+if(imgNum >=3)
+for i = 3:imgNum
+    figure(F1), subplot(imgNum,3,3*(i-1)+1);
+    pcolor(xi,xi,waveFronts(:,:,i)), shading interp
     axis square, Fc = colorbar;
     xlabel(Fc,'\mum');
-    title('Wavefront:phase2');
-    figure(F1); subplot(imgNum,3,8);
-    PSF = PSFs(:,:,3);
+    title(['Add:phase', num2str(i-1)]);
+    figure(F1); subplot(imgNum,3,3*(i-1)+2);
+    PSF = PSFs(:,:,i);
     PSF = PSF/max(PSF(:));
     PSF = PSF(round(Sx/2)-a:round(Sx/2)+a,round(Sy/2)-a:round(Sy/2)+a);
     imshow(PSF,[]),colorbar;
-    title('PSF:phase2');
-    figure(F1); subplot(imgNum,3,9);
-    img = imgs(:,:,3);
+    title(['PSF:phase', num2str(i-1)]);
+    figure(F1); subplot(imgNum,3,3*(i-1)+3);
+    img = imgs(:,:,i);
     img = img/max(img(:));
     imshow(img,[]),colorbar;
-    title('Image:phase2');
+    title(['Image:phase', num2str(i-1)]);
+end
 end
 savefig([fileFolderOut 'input.fig']);
+end
 
 waveFront_original = waveFronts(:,:,1);
 wMin = min(waveFront_original(:));
