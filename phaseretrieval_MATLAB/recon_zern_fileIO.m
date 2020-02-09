@@ -1,28 +1,45 @@
-% Test phase retrieval on experimental phase diversity images
+function [coeffsOut, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, fileName, imgNum, repNum,...
+    zernCoeffOrder, iteration, gamma, cropSize, bgValue,flagShowInput, flagShowRecon)
+% phase retrieval based on input files  of phase diversity images
+%  % Output
+% coeffsOut: reconstructed Zernike coefficients, to be applied to DM to
+% cancel aberration;
+% cTime: computational time;
+% % Input
+% fileFolderOut: strings of the output path;
+% fileFolderIn: strings of the input path;
+% fileName: strings of the file name;
+% imgNum: number of phase diversity images (including raw image);
+% repNum: number of images for each phase diversity;
+% zernCoeffOrder: Zernike coefficient index to be retrieved;
+% iteration: iteration number for the reconstruction;
+% gamma: tuning parameter, 1e-5~1e-10;
+% cropSize: image size for calculation;
+% bgValue: background of the input image;
+% flagShowInput: show image/phase of input;
+% flagShowRecon: show reconstruction result;
 % by Min Guo
-% Jan 30, 2020;
-% Modifications: 
-% 1) incorporate corrections for mismatch between MATLAB and HASO
-% Feb. 07, 2020
-clear all;
-close all;
+% Feb. 9, 2020;
+
+% clear all;
+% close all;
 warning('off','all')
 tic;
-fileFolderIn = 'D:\Data\20200207_PR\';
-fileName = 'beads_2';
+% fileFolderIn = 'D:\Data\20200207_PR\';
+% fileName = 'beads_2';
 % fileFolderOut = [fileFolderIn,fileName, '\'];
 fileImgIn = [fileFolderIn, fileName,'.tif'];
 fileZernIn = [fileFolderIn,fileName,'_note_2PicsPerPhase.txt'];
-imgNum = 5; % 2 or 3
-fileFolderOut = [fileFolderIn,fileName, num2str(imgNum),'\'];
-repNum = 2;
-zernCoeffOrder = 15; % 4th (15), 5th(21), 6th(28) and 7th(36) orders
+% imgNum = 5; % 2 or 3
+% fileFolderOut = [fileFolderIn,fileName, num2str(imgNum),'\'];
+% repNum = 2;
+% zernCoeffOrder = 15; % 4th (15), 5th(21), 6th(28) and 7th(36) orders
 flagExcludeTilt = 1; % exclude tilts
 flagExcludeDefocus = 0; % exclude defocus
 rotAng = -75;
+% flagShowInput = 0;
+% flagShowRecon = 1;
 flagSmoothEdge = 1;
-flagShowInput = 0;
-flagShowRecon = 1;
 
 flagGPU = 1;
 if(flagExcludeTilt==1)
@@ -35,8 +52,8 @@ if(flagExcludeDefocus==1)
 end
 
 zernNum = length(pIn);
-iteration = 10; % note: more zernike orders --> more iterations? *******
-gamma = 1e-6;
+% iteration = it; % note: more zernike orders --> more iterations? *******
+% gamma = 1e-6;
 
 % upboosting steps,e.g., 4th (15), 5th(21), 6th(28) and 7th(36) orders
 if(zernCoeffOrder<=11)
@@ -68,8 +85,8 @@ filePreImgs = [fileFolderOut 'imgs_pre.tif']; % image: pre rotation and cropping
 disp('...Preprocessing images...');
 % % % input images
 % rotAng = -73;
-cropSize = 384;
-bgValue = 290;
+% cropSize = 384;
+% bgValue = 290;
 imgsRaw = double(ReadTifStack(fileImgIn));
 [Sx1, Sy1, rawNum] = size(imgsRaw);
 % average if acquistion repeated for each phase
@@ -117,7 +134,7 @@ if(flagSmoothEdge==1)
         img = edgetaper(img,sKernel);
         imgs(:,:,i) = img;
     end
-end        
+end  
 WriteTifStack(imgs, [fileFolderOut 'Image_phasediversity.tif'], 32);
 
 % % % phases and zernike coefficients
@@ -186,9 +203,6 @@ coeffsOut = coeffsOut.*coeffsSigns;
 fileID = fopen([fileFolderOut, 'zernCoeffs_estimated.txt'],'w');
 fprintf(fileID,'%f\t',coeffsOut');
 fclose(fileID);
-fileID = fopen([fileFolderOut, 'zernCoeffs_estimated_negative.txt'],'w');
-fprintf(fileID,'%f\t',-coeffsOut');
-fclose(fileID);
 
 % check results
 xi = 1: Sx;
@@ -252,7 +266,6 @@ end
 end
 savefig([fileFolderOut 'input.fig']);
 end
-
 if(flagShowRecon == 1)
 waveFront_original = waveFronts(:,:,1);
 wMin = min(waveFront_original(:));
