@@ -1,5 +1,5 @@
-# computationalAO
-Adaptive optics for fluorescence microscopy based on phase retrieval algorithm
+# Phase retrieval algorithm
+MATLAB code for estimate of the zernike coefficients of aberration based on phase diversity images
 
 Scripts and functions:
 1) recon_zern.m: key function for estimating aberrated phase (Zernike coefficients) from phase diversity images and known phases (Zernike coefficients). It calls two subfunctions -- zernretrieve_pre and zernretrieve_loop; 
