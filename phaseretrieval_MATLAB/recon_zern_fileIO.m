@@ -1,5 +1,5 @@
 function [coeffsOut, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, fileName, imgNum, repNum,...
-    zernCoeffOrder, iteration, gamma, cropSize, bgValue,flagShowInput, flagShowRecon)
+    zernCoeffOrder, iteration, gamma, cropSize, bgValue,flagShowInput, flagShowRecon, flagGPU)
 % phase retrieval based on input files  of phase diversity images
 %  % Output
 % coeffsOut: reconstructed Zernike coefficients, to be applied to DM to
@@ -18,6 +18,7 @@ function [coeffsOut, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, file
 % bgValue: background of the input image;
 % flagShowInput: show image/phase of input;
 % flagShowRecon: show reconstruction result;
+% flagGPU: use GPU or not;
 % by Min Guo
 % Feb. 9, 2020;
 
@@ -41,7 +42,7 @@ rotAng = -75;
 % flagShowRecon = 1;
 flagSmoothEdge = 1;
 
-flagGPU = 1;
+% flagGPU = 1;
 if(flagExcludeTilt==1)
     pIn = 4:zernCoeffOrder; % 1: piston; 2:tilt X; 3: tilt Y;
 else
