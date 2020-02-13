@@ -21,5 +21,5 @@ else
     mkdir(fileFolderOut);
     disp(['output folder created:' fileFolderOut]);
 end
-[coeffsOut, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, fileName, imgNum, repNum,...
+[coeffsOut, cRMSE, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, fileName, imgNum, repNum,...
     zernCoeffOrder, iteration, gamma, cropSize, bgValue,flagShowInput, flagShowRecon, flagGPU);
