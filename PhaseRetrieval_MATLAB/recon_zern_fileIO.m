@@ -30,14 +30,14 @@ tic;
 % fileName = 'beads_2';
 % fileFolderOut = [fileFolderIn,fileName, '\'];
 fileImgIn = [fileFolderIn, fileName,'.tif'];
-fileZernIn = [fileFolderIn,fileName,'_note_2PicsPerPhase.txt'];
+fileZernIn = [fileFolderIn,fileName,'_coeff.txt'];
 % imgNum = 5; % 2 or 3
 % fileFolderOut = [fileFolderIn,fileName, num2str(imgNum),'\'];
 % repNum = 2;
 % zernCoeffOrder = 15; % 4th (15), 5th(21), 6th(28) and 7th(36) orders
 flagExcludeTilt = 1; % exclude tilts
 flagExcludeDefocus = 0; % exclude defocus
-rotAng = -75;
+rotAng = 70;
 % flagShowInput = 0;
 % flagShowRecon = 1;
 flagSmoothEdge = 1;
@@ -117,9 +117,9 @@ end
 imgs = zeros(cropSize,cropSize,imgNum);
 for i = 1:imgNum
     imgIn = imgsAve(:,:,i);
-%     imgIn = flipud(imgIn);
+    imgIn = flipud(imgIn);
     img = imrotate(imgIn,rotAng,'bilinear');
-    img = flipud(img);
+%     img = flipud(img);
     Soxy = round((size(img)-cropSize)/2+1);
     Sox = Soxy(1);
     Soy = Soxy(2);
@@ -297,7 +297,7 @@ title('Image:estimated');
 savefig([fileFolderOut 'retrieval.fig']);
 
 F3 = figure; % plot Zernike coefficients
-plot(pIn,coeffsInitial,pIn,cEstimate,'LineWidth',2); 
+plot(pIn-1,coeffsInitial,pIn-1,cEstimate,'LineWidth',2); % imagine optic convention
 legend( 'groundtruth','estimated');
 xlabel('Zernike Coeff Order');
 ylabel('Zernike Coeff Magnitude');
