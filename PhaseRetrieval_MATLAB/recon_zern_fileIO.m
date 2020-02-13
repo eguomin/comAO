@@ -1,9 +1,10 @@
-function [coeffsOut, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, fileName, imgNum, repNum,...
+function [coeffsOut, cRMSE, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, fileName, imgNum, repNum,...
     zernCoeffOrder, iteration, gamma, cropSize, bgValue,flagShowInput, flagShowRecon, flagGPU)
 % phase retrieval based on input files  of phase diversity images
 %  % Output
 % coeffsOut: reconstructed Zernike coefficients, to be applied to DM to
 % cancel aberration;
+% cRMSE: root mean squared error;
 % cTime: computational time;
 % % Input
 % fileFolderOut: strings of the output path;
@@ -21,6 +22,8 @@ function [coeffsOut, cTime] = recon_zern_fileIO(fileFolderOut,fileFolderIn, file
 % flagGPU: use GPU or not;
 % by Min Guo
 % Feb. 9, 2020;
+% Modification (Feb. 13, 2020):
+% add the calculation of RMSE value
 
 % clear all;
 % close all;
@@ -177,9 +180,10 @@ cTime1 = toc;
 disp(['... ... time cost: ', num2str(cTime1)]);
 % reconstruct zernike coefficients: estimate the unknown aberration
 disp('...Reconstructing Zernike coefficients...');
-devNum = 1;
+% devNum = 1;
 % gpuDevice(devNum);
 [cEstimate, imgEstimate, rePar] = recon_zern(imgs, pIn, coeffs_delta, gamma, iteration, zernSteps, pixelSize, lambda, NA, flagGPU);
+cRMSE = rms(cEstimate(:) - coeffsInitial(:));
 cTime2 = toc;
 disp(['... ... time cost: ', num2str(cTime2-cTime1)]);
 save([fileFolderOut 'data.mat']);
