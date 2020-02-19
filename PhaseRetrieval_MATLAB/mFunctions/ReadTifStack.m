@@ -1,4 +1,5 @@
 function Stack = ReadTifStack(FileTif)
+    warning('off','all')
     InfoImage = imfinfo(FileTif);
     NumberImages = length(InfoImage);
     TifLink = Tiff(FileTif, 'r');
