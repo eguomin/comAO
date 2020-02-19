@@ -21,7 +21,7 @@ function [cEstimate, imgEstimate, rePar] = recon_zern(imgs, p, c_delta, gamma, i
 % By: Min Guo
 % Jan 28, 2020
 [Sx, Sy, imgNum] = size(imgs);
-deltaNum = size(c_delta,2);
+deltaNum = size(c_delta,1);
 if(Sx~=Sy)
    error('recon_zern: the x size of input images should be same with the y size');
 end 

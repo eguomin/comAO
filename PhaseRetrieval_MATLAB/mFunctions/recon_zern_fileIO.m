@@ -43,7 +43,7 @@ flagExcludeDefocus = 0; % exclude defocus
 rotAng = 70;
 % flagShowInput = 0;
 % flagShowRecon = 1;
-flagSmoothEdge = 1;
+flagSmoothEdge = 0;
 
 % flagGPU = 1;
 if(flagExcludeTilt==1)
@@ -132,10 +132,12 @@ imgs = imgs - bgValue;
 imgs = max(imgs,0.01);
 % smooth the boundary of images
 if(flagSmoothEdge==1)
-    sKernel = fspecial('gaussian',[10 10],3); 
+    % sKernel = fspecial('gaussian',[10 10],3); 
+    napodize = 20;
     for i = 1:imgNum
         img = imgs(:,:,i);
-        img = edgetaper(img,sKernel);
+        % img = edgetaper(img,sKernel);
+        img = apodize(img, napodize);
         imgs(:,:,i) = img;
     end
 end  
@@ -170,11 +172,9 @@ end
 pEnd = zernCoeffOrder-1;
 % unknown aberration:
 coeffsInitial = coeffsRaw(1,pStart:pEnd);
-coeffsInitial = coeffsInitial';
 % phase diversity:
 coeffs_delta = coeffsRaw(2:imgNum,pStart:pEnd);
-coeffs_delta = coeffs_delta';
-coeffs_all = [coeffsInitial';coeffs_delta';]';
+coeffs_all = [coeffsInitial;coeffs_delta;];
 
 cTime1 = toc;
 disp(['... ... time cost: ', num2str(cTime1)]);
@@ -182,7 +182,7 @@ disp(['... ... time cost: ', num2str(cTime1)]);
 disp('...Reconstructing Zernike coefficients...');
 % devNum = 1;
 % gpuDevice(devNum);
-[cEstimate, imgEstimate, rePar] = recon_zern(imgs, pIn, coeffs_delta, gamma, iteration, zernSteps, pixelSize, lambda, NA, flagGPU);
+[cEstimate, imgEstimate, ~] = recon_zern(imgs, pIn, coeffs_delta, gamma, iteration, zernSteps, pixelSize, lambda, NA, flagGPU);
 cRMSE = rms(cEstimate(:) - coeffsInitial(:));
 cTime2 = toc;
 disp(['... ... time cost: ', num2str(cTime2-cTime1)]);
@@ -300,7 +300,7 @@ imshow(img,[]),colorbar;
 title('Image:estimated');
 savefig([fileFolderOut 'retrieval.fig']);
 
-F3 = figure; % plot Zernike coefficients
+figure; % plot Zernike coefficients
 plot(pIn-1,coeffsInitial,pIn-1,cEstimate,'LineWidth',2); % imagine optic convention
 legend( 'groundtruth','estimated');
 xlabel('Zernike Coeff Order');

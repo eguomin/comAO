@@ -149,11 +149,9 @@ end
 pEnd = zernCoeffOrder-1;
 % unknown aberration:
 coeffsInitial = coeffsRaw(1,pStart:pEnd);
-coeffsInitial = coeffsInitial';
 % phase diversity:
 coeffs_delta = coeffsRaw(2:imgNum,pStart:pEnd);
-coeffs_delta = coeffs_delta';
-coeffs_all = [coeffsInitial';coeffs_delta';]';
+coeffs_all = [coeffsInitial;coeffs_delta;];
 
 cTime1 = toc;
 disp(['... ... time cost: ', num2str(cTime1)]);

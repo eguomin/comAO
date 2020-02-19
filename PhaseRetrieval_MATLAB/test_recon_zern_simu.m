@@ -1,7 +1,7 @@
 % Test phase retrieval on simulated phase diversity images
 
 clear all;
-close all;
+% close all;
 tic;
 
 flagGPU = 1;
@@ -13,7 +13,7 @@ gamma = 1e-14;
 zernSteps = [15 pIn(zernNum)] - pIn(1) + 1; % upboosting steps,e.g., 4th (15), 5th(21), 6th(28) and 7th(36) orders
 % random zernike coefficients
 a = -0.1; b = 0.1;
-cRandom = a + (b-a).*rand(zernNum,1); 
+cRandom = a + (b-a).*rand(1,zernNum); 
 % unknown aberration:
 coeffsInitial = cRandom;
 % phase diversity:
@@ -22,8 +22,8 @@ abType1 = 'defocus'; % 'spherical' or 'defocus'
 abType2 = 'defocus';
 abValue1 = 0.2; % um
 abValue2 = -0.2; % um
-fileFolderIn = '.\DataForTest\';
-fileFolderOut = '.\DataForTest\imSample2_test\';
+fileFolderIn = '..\DataForTest\Simu\';
+fileFolderOut = '..\DataForTest\Simu\TestResults\';
 nType = 'none';
 if isequal(exist(fileFolderOut, 'dir'),7)
     disp(['output folder:' fileFolderOut]);
@@ -45,7 +45,7 @@ elseif (strcmp(abType1, 'spherical'))
 else
     error('No matched aberration type, please use defocus or spherical');
 end
-coeffs_delta1 = zeros(zernNum,1);
+coeffs_delta1 = zeros(1,zernNum);
 coeffs_delta1(abIdx- pIn(1) + 1) = abValue1; % um
 
 coeffs_delta = coeffs_delta1;
@@ -58,11 +58,11 @@ if (imgNum==3)
     else
         error('No matched aberration type, please use defocus or spherical');
     end
-    coeffs_delta2 = zeros(zernNum,1);
+    coeffs_delta2 = zeros(1, zernNum);
     coeffs_delta2(abIdx - pIn(1) + 1) = abValue2; % um
-    coeffs_delta = [coeffs_delta';coeffs_delta2';]';
+    coeffs_delta = [coeffs_delta;coeffs_delta2;];
 end
-coeffs_all = [coeffsInitial';coeffs_delta';]';
+coeffs_all = [coeffsInitial;coeffs_delta;];
 
 % generate phase diversity images;
 disp('...Generating simulated images...');

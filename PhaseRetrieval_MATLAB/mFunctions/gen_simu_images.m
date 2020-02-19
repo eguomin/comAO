@@ -23,7 +23,7 @@ function [imgs, PSFs, waveFronts] = gen_simu_images(img0, p, coeffs, pixelSize, 
 % By: Min Guo
 % Jan 30, 2020
 [Sx, Sy] = size(img0);
-imgNum = size(coeffs,2);
+imgNum = size(coeffs,1);
 if(Sx~=Sy)
    error('gen_simu_images: the x size of input images should be same with the y size');
 end 
@@ -46,9 +46,9 @@ PSFs = zeros(Sx, Sy, imgNum);
 waveFronts = zeros(Sx, Sy, imgNum);
 for i = 1:imgNum
     if(i==1)
-        c_phi = coeffs(:,1);
+        c_phi = coeffs(1,:);
     else
-        c_phi = coeffs(:,1) + coeffs(:,i);
+        c_phi = coeffs(1,:) + coeffs(i,:);
     end
     phi(idx) = create_wavefront(p,c_phi,r0,theta0); % in phase unit: pi
     pupilFun = pupilMask.*exp(1i*phi);

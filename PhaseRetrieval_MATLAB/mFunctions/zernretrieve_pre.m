@@ -22,7 +22,7 @@ function [imgDs, zernPolynomials, Rc, waveFront_deltas] = zernretrieve_pre(imgs,
 % Jan 29, 2020
 
 [Sx, Sy, imgNum] = size(imgs); % image numbers: 2
-deltaNum = size(c_delta,2);
+deltaNum = size(c_delta,1);
 if (imgNum - deltaNum)~= 1
     error('zernretrieve_pre:NMlength','deltaNum should be: imgNum -1.')
 end
@@ -63,7 +63,7 @@ end
 waveFront_deltas = zeros(Sx,Sy,imgNum); % known aberration, e.g., defocus
 waveFront_delta = zeros(Sx,Sy);
 for k = 2:imgNum
-    waveFront_delta(idx) = create_wavefront(p, c_delta(:,k-1), r, theta);
+    waveFront_delta(idx) = create_wavefront(p, c_delta(k-1,:), r, theta);
     waveFront_deltas(:,:,k) = waveFront_delta;
 end
 
