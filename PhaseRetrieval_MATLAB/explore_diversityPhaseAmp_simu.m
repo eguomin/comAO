@@ -1,7 +1,7 @@
 % explore amplitude of the aberratin/diversity phase based on simulations
 % clear all;
 % close all
-pathOutMain = 'I:\AO_data\20200220_Simu\divesityApm\hybrid_asti_coma\';
+pathOutMain = 'I:\AO_data\20200220_Simu\divesityApm\hybrid_defo_asti_sphe\';
 flagNewAberration = 0;
 % parameters
 pIn = 4:21; % 1: piston; 2:tilt X; 3: tilt Y;
@@ -32,8 +32,9 @@ end
 dAm = 0.3;
 coeffs_deltaInitial = zeros(4,zernNum);
 % coeffs_deltaInitial(1,5-pIn(1)+1) = dAm; % astigmitism;
+coeffs_deltaInitial(1,4-pIn(1)+1) = dAm; % hybrid;
 coeffs_deltaInitial(1,5-pIn(1)+1) = dAm; % hybrid;
-coeffs_deltaInitial(1,7-pIn(1)+1) = dAm; % hybrid;
+coeffs_deltaInitial(1,9-pIn(1)+1) = dAm; % hybrid;
 coeffs_deltaInitial(2,7-pIn(1)+1) = dAm; % coma;
 coeffs_deltaInitial(3,4-pIn(1)+1) = dAm; % defocus;
 coeffs_deltaInitial(4,9-pIn(1)+1) = dAm; % spherical;
