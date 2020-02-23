@@ -10,11 +10,11 @@ pIn = 4:36; % 1: piston; 2:tilt X; 3: tilt Y;
 zernNum = length(pIn);
 iteration = 5; % note: more zernike orders --> more iterations? *******
 gamma = 1e-14;
-% zernSteps = pIn(zernNum) - pIn(1) + 1;
-zernSteps = [15 21 28 pIn(zernNum)] - pIn(1) + 1; % upboosting steps,e.g., 4th (15), 5th(21), 6th(28) and 7th(36) orders
+zernSteps1 = pIn(zernNum) - pIn(1) + 1;
+zernSteps2 = [15 21 28 pIn(zernNum)] - pIn(1) + 1; % bootstrapping steps,e.g., 4th (15), 5th(21), 6th(28) and 7th(36) orders
 % random zernike coefficients
 a = -0.1; b = 0.1;
-% cRandom = a + (b-a).*rand(1,zernNum); 
+% cRandom = a + (b-a).*rand(1,zernNum);  % uncomment to generate random aberrations 
 % unknown aberration:
 coeffsInitial = cRandom;
 % phase diversity:
@@ -25,7 +25,7 @@ abValue1 = 0.8; % um
 abValue2 = -0.2; % um
 fileFolderIn = '..\DataForTest\Simu\';
 % fileFolderOut = '..\DataForTest\Simu\TestResults\';
-fileFolderOut = 'C:\Users\eguom\Documents\Retrieval\upboosting\';
+fileFolderOut = 'C:\Users\eguom\Documents\Retrieval\bootstrapping\';
 nType = 'none';
 if isequal(exist(fileFolderOut, 'dir'),7)
     disp(['output folder:' fileFolderOut]);
@@ -78,7 +78,8 @@ if(flagGPU)
     devNum = 1;
     gpuDevice(devNum);
 end
-[cEstimate, imgEstimate, rePar] = recon_zern(imgs, pIn, coeffs_delta, gamma, iteration, zernSteps, pixelSize, lambda, NA, flagGPU);
+[cEstimate1, imgEstimate1, rePar1] = recon_zern(imgs, pIn, coeffs_delta, gamma, iteration, zernSteps1, pixelSize, lambda, NA, flagGPU);
+[cEstimate2, imgEstimate2, rePar2] = recon_zern(imgs, pIn, coeffs_delta, gamma, iteration, zernSteps2, pixelSize, lambda, NA, flagGPU);
 cTime2 = toc;
 disp(['... ... time cost: ', num2str(cTime2-cTime1)]);
 save([fileFolderOut 'data.mat']);
@@ -86,20 +87,27 @@ disp(['Processing completed!!! Total time cost:', num2str(cTime2)]);
 WriteTifStack(img0, [fileFolderOut 'Image_groundtruth.tif'], 32);
 WriteTifStack(imgs, [fileFolderOut 'Image_phasediversity.tif'], 32);
 WriteTifStack(PSFs, [fileFolderOut 'PSF_phasediversity.tif'], 32);
-WriteTifStack(imgEstimate, [fileFolderOut 'Image_estimated.tif'], 32);
 WriteTifStack(waveFronts, [fileFolderOut 'Wavefront_phasediversity.tif'], 32);
+WriteTifStack(imgEstimate1, [fileFolderOut 'Image_estimated_direct.tif'], 32);
+WriteTifStack(imgEstimate2, [fileFolderOut 'Image_estimated_upboosting.tif'], 32);
 [Sx, Sy] = size(img0);
 [r, theta, idx] = def_pupilcoor(Sx, pixelSize, lambda, NA);
-waveFront = zeros(Sx, Sy);
-waveFront(idx) = create_wavefront(pIn,cEstimate,r(idx),theta(idx));
-WriteTifStack(waveFront, [fileFolderOut 'Wavefront_estimated.tif'], 32);
+waveFront1 = zeros(Sx, Sy);
+waveFront1(idx) = create_wavefront(pIn,cEstimate1,r(idx),theta(idx));
+WriteTifStack(waveFront1, [fileFolderOut 'Wavefront_estimated_direct.tif'], 32);
+waveFront2 = zeros(Sx, Sy);
+waveFront2(idx) = create_wavefront(pIn,cEstimate2,r(idx),theta(idx));
+WriteTifStack(waveFront2, [fileFolderOut 'Wavefront_estimated_upboosting.tif'], 32);
 
 % check results
+waveFrontForShow = nan(Sx, Sy);
 xi = 1: Sx;
 a = 20;
 F1 = figure; % input images and phases
 figure(F1), subplot(imgNum,3,1);
-pcolor(xi,xi,waveFronts(:,:,1)), shading interp
+waveFrontTemp = waveFronts(:,:,1);
+waveFrontForShow(idx) = waveFrontTemp(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
 axis square, Fc = colorbar;
 xlabel(Fc,'\mum');
 title('Wavefront: aberrated');
@@ -116,7 +124,9 @@ imshow(img,[]),colorbar;
 title('Image:aberrated');
 
 figure(F1), subplot(imgNum,3,4);
-pcolor(xi,xi,waveFronts(:,:,2)), shading interp
+waveFrontTemp = waveFronts(:,:,2);
+waveFrontForShow(idx) = waveFrontTemp(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
 axis square, Fc = colorbar;
 xlabel(Fc,'\mum');
 title('Wavefront:phase1');
@@ -134,7 +144,9 @@ title('Image:phase1');
 
 if(imgNum ==3)
     figure(F1), subplot(imgNum,3,7);
-    pcolor(xi,xi,waveFronts(:,:,3)), shading interp
+    waveFrontTemp = waveFronts(:,:,3);
+    waveFrontForShow(idx) = waveFrontTemp(idx);
+    pcolor(xi,xi,waveFrontForShow), shading interp
     axis square, Fc = colorbar;
     xlabel(Fc,'\mum');
     title('Wavefront:phase2');
@@ -155,37 +167,119 @@ savefig([fileFolderOut 'input.fig']);
 waveFront_original = waveFronts(:,:,1);
 wMin = min(waveFront_original(:));
 wMax = max(waveFront_original(:));
-F2 = figure; subplot(2,2,1);
-pcolor(xi,xi,waveFronts(:,:,1)), shading interp
+F2 = figure; subplot(2,3,1);
+waveFrontTemp = waveFronts(:,:,1);
+waveFrontForShow(idx) = waveFrontTemp(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
 axis square, Fc = colorbar;
 caxis([wMin wMax])
 xlabel(Fc,'\mum');
 title('Wavefront: aberrated');
 
-figure(F2); subplot(2,2,2);
+figure(F2); subplot(2,3,4);
 img = img0/max(img0(:));
 imshow(img,[]),colorbar;
 title('Image:ground truth');
 
-figure(F2); subplot(2,2,3);
-pcolor(xi,xi,waveFront), shading interp
+figure(F2); subplot(2,3,2);
+waveFrontForShow(idx) = waveFront1(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
 axis square, Fc = colorbar;
 caxis([wMin wMax])
 xlabel(Fc,'\mum');
-title('Wavefront: estimated');
+title('Wavefront: direct');
 
-figure(F2); subplot(2,2,4);
-img = imgEstimate/max(imgEstimate(:));
+figure(F2); subplot(2,3,5);
+img = imgEstimate1/max(imgEstimate1(:));
 imshow(img,[]),colorbar;
-title('Image:estimated');
+title('Image:direct');
+
+figure(F2); subplot(2,3,3);
+waveFrontForShow(idx) = waveFront2(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
+axis square, Fc = colorbar;
+caxis([wMin wMax])
+xlabel(Fc,'\mum');
+title('Wavefront: bootstrapping');
+
+figure(F2); subplot(2,3,6);
+img = imgEstimate2/max(imgEstimate2(:));
+imshow(img,[]),colorbar;
+title('Image:upboosting');
 savefig([fileFolderOut 'retrieval.fig']);
 
 F3 = figure; % plot Zernike coefficients
-plot(pIn,coeffsInitial,pIn,cEstimate,'LineWidth',2); 
-legend( 'groundtruth','estimated');
-xlabel('Zernike Coeff Order');
-ylabel('Zernike Coeff Magnitude');
+plot(pIn,coeffsInitial,pIn,cEstimate1,pIn,cEstimate2,'LineWidth',2); 
+legend( 'groundtruth','direct','bootstrapping');
+xlabel('Zernike Coeff Index');
+ylabel('Magnitude');
 set(gca,'FontSize', 14);
 title('Zernike coefficients');
 savefig([fileFolderOut 'coeff.fig']);
 
+wMin = -0.25;
+wMax = 0.25;
+F4 = figure; subplot(2,3,1);
+waveFrontTemp = waveFronts(:,:,1);
+waveFrontForShow(idx) = waveFrontTemp(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
+axis square, Fc = colorbar;
+caxis([wMin wMax])
+xlabel(Fc,'\mum');
+title('Wavefront: aberrated');
+figure(F4); subplot(2,3,2);
+waveFrontForShow(idx) = waveFront1(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
+axis square, Fc = colorbar;
+caxis([wMin wMax])
+xlabel(Fc,'\mum');
+title('Wavefront: direct');
+figure(F4); subplot(2,3,3);
+waveFrontForShow(idx) = waveFront2(idx);
+pcolor(xi,xi,waveFrontForShow), shading interp
+axis square, Fc = colorbar;
+caxis([wMin wMax])
+xlabel(Fc,'\mum');
+title('Wavefront: bootstrapping');
+figure(F4); subplot(2,3,4);
+cTemp = rePar2.cEstimate(:,1);
+waveFrontForShow(idx) = create_wavefront(pIn,cTemp(:),r(idx),theta(idx));
+pcolor(xi,xi,waveFrontForShow), shading interp
+axis square, Fc = colorbar;
+caxis([wMin wMax])
+xlabel(Fc,'\mum');
+title('Wavefront: bootstrapping-step1');
+figure(F4); subplot(2,3,5);
+cTemp = rePar2.cEstimate(:,2);
+waveFrontForShow(idx) = create_wavefront(pIn,cTemp(:),r(idx),theta(idx));
+pcolor(xi,xi,waveFrontForShow), shading interp
+axis square, Fc = colorbar;
+caxis([wMin wMax])
+xlabel(Fc,'\mum');
+title('Wavefront: bootstrapping-step2');
+figure(F4); subplot(2,3,6);
+cTemp = rePar2.cEstimate(:,3);
+waveFrontForShow(idx) = create_wavefront(pIn,cTemp(:),r(idx),theta(idx));
+pcolor(xi,xi,waveFrontForShow), shading interp
+axis square, Fc = colorbar;
+caxis([wMin wMax])
+xlabel(Fc,'\mum');
+title('Wavefront: bootstrapping-step3');
+savefig([fileFolderOut 'wavefronts_bootstrapping.fig']);
+
+F5 = figure;
+pIn1 = pIn(1:zernSteps2(1));
+cTemp1 = rePar2.cEstimate(1:zernSteps2(1),1);
+pIn2 = pIn(1:zernSteps2(2));
+cTemp2 = rePar2.cEstimate(1:zernSteps2(2),2);
+pIn3 = pIn(1:zernSteps2(3));
+cTemp3 = rePar2.cEstimate(1:zernSteps2(3),3);
+plot(pIn,coeffsInitial,pIn1,cTemp1(:),pIn2,cTemp2(:),...
+    pIn3,cTemp3(:),pIn,cEstimate2,'LineWidth',2); 
+legend( 'groundtruth','bootstrapping-step1','bootstrapping-step2',...
+    'bootstrapping-step3','bootstrapping-final');
+xlabel('Zernike Coeff Index');
+ylabel('Magnitude');
+set(gca,'FontSize', 14);
+title('Zernike coefficients');
+savefig([fileFolderOut 'coeff_bootstrapping.fig']);

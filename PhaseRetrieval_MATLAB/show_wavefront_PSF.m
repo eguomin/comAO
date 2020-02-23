@@ -3,8 +3,11 @@ pixelSize = 0.096; % um
 lambda = 0.550; % um
 NA = 1.2;
 
-% pIn = 1:32;
-% cEstimate = zeros(1,32);
+pIn = 1:32;
+cEstimate = zeros(1,32);
+cEstimate(6) = 0.1;
+cEstimate(7) = 0.2;
+cEstimate([9 12 14]) = 0.1;
 Sx = 768;
 Sy = Sx;
 [r, theta, idx] = def_pupilcoor(Sx, pixelSize, lambda, NA);
