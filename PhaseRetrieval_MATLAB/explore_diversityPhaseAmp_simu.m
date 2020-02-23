@@ -8,10 +8,10 @@ pIn = 4:21; % 1: piston; 2:tilt X; 3: tilt Y;
 zernNum = length(pIn);
 iteration = 5; % note: more zernike orders --> more iterations? *******
 zernCoeffOrder = max(pIn);
-% nType = 'none';
-% gamma = 1e-14;
-nType = 'poisson';
-gamma = 1e-6;
+nType = 'none';
+gamma = 1e-14;
+% nType = 'poisson';
+% gamma = 1e-6;
 fileFolderOut = [pathOutMain , nType, '\'];
 
 expNum = 50;
