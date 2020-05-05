@@ -36,9 +36,9 @@ end
 fileImgSample = [fileFolderIn 'imSample2.tif'];
 fileImgs = [fileFolderOut 'imgs.tif']; % image
 
-pixelSize = 0.1625; % um
-lambda = 0.510; % um
-NA = 0.8;
+pixelSize = 0.096; % um
+lambda = 0.532; % um
+NA = 1.2;
 % Known aberration: image 1
 if (strcmp(abType1, 'defocus'))
     abIdx = 4; % 4th: defocus, 9th: spherical
@@ -183,7 +183,7 @@ savefig([fileFolderOut 'retrieval.fig']);
 F3 = figure; % plot Zernike coefficients
 plot(pIn,coeffsInitial,pIn,cEstimate,'LineWidth',2); 
 legend( 'groundtruth','estimated');
-xlabel('Zernike Coeff Order');
+xlabel('Zernike Coeff Index');
 ylabel('Zernike Coeff Magnitude');
 set(gca,'FontSize', 14);
 title('Zernike coefficients');

@@ -75,7 +75,7 @@ else
 end
 
 pixelSize = 0.096; % um
-lambda = 0.550; % um
+lambda = 0.532; % um
 NA = 1.2;
 % create output folder
 if isequal(exist(fileFolderOut, 'dir'),7)
@@ -303,7 +303,7 @@ savefig([fileFolderOut 'retrieval.fig']);
 figure; % plot Zernike coefficients
 plot(pIn-1,coeffsInitial,pIn-1,cEstimate,'LineWidth',2); % imagine optic convention
 legend( 'groundtruth','estimated');
-xlabel('Zernike Coeff Order');
+xlabel('Zernike Coeff Index');
 ylabel('Zernike Coeff Magnitude');
 set(gca,'FontSize', 14);
 title('Zernike coefficients');
