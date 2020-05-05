@@ -43,7 +43,7 @@ flagExcludeDefocus = 0; % exclude defocus
 rotAng = 70;
 % flagShowInput = 0;
 % flagShowRecon = 1;
-flagSmoothEdge = 0;
+flagSmoothEdge = 1;
 
 % flagGPU = 1;
 if(flagExcludeTilt==1)
@@ -132,14 +132,19 @@ imgs = imgs - bgValue;
 imgs = max(imgs,0.01);
 % smooth the boundary of images
 if(flagSmoothEdge==1)
-    % sKernel = fspecial('gaussian',[10 10],3); 
-    napodize = 20;
+    sKernel = fspecial('gaussian',[10 10],3); 
     for i = 1:imgNum
         img = imgs(:,:,i);
-        % img = edgetaper(img,sKernel);
-        img = apodize(img, napodize);
+        img = edgetaper(img,sKernel);
         imgs(:,:,i) = img;
     end
+%     napodize = 20;
+%     for i = 1:imgNum
+%         img = imgs(:,:,i);
+%         % img = edgetaper(img,sKernel);
+%         img = apodize(img, napodize);
+%         imgs(:,:,i) = img;
+%     end
 end  
 WriteTifStack(imgs, [fileFolderOut 'Image_phasediversity.tif'], 32);
 
