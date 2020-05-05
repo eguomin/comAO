@@ -1,7 +1,7 @@
 % test recon_zern_fileIO
 clear all;
 % close all;
-fileFolderMain = 'C:\Programs\computAO\Retrieval\DataForTest\Exp\';
+fileFolderMain = '..\DataForTest\Exp\';
 fileName = 'beads_25';
 fileFolderIn = [fileFolderMain, fileName, '\'];
 imgNum = 2;
