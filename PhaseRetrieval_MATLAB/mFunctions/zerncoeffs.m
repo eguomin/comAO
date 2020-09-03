@@ -3,7 +3,7 @@ function coeffs = zerncoeffs(phi, p)
 % Input
 %   phi: an n x n array of phase image to be decomposited to zernike representations.
 %       there should not be any NaN element)
-%   p: a vector of single indexes(Fringe convention) for Zernike components,
+%   p: a vector of single indexes(OSA/ANSI convention) for Zernike components,
 %       elements should be positive integers(>=1)
 % Output
 %   coeffs: a vector of zernike coefficients
@@ -11,6 +11,7 @@ function coeffs = zerncoeffs(phi, p)
 % Note: This file is modified based on zernike_coeffs.m for http://www. 
 %       zernfun.m is required for use with this file. It is available here: 
 %       http://www.mathworks.com/matlabcentral/fileexchange/7687 
+
 % By: Min Guo, NIH
 % Dec 09, 2016
 
@@ -25,7 +26,9 @@ idx = r<=1;
 z = zeros(size(X));
 
 M = length(p);
-[n, m] = zernfringe2nm(p);
+% [n, m] = zernfringe2nm(p);% modified Jul. 27, 2020
+conType = 'OSA';
+[n, m] = zernidx2nm(p, conType);
 y = zernfun(n,m,r(idx),theta(idx));
 
 Zernike = cell(M);

@@ -14,8 +14,8 @@ function [cEstimate, imgEstimate, J] = zernretrieve(imgs, r, theta, idx, p, c_de
 %   1)r: a vector of numbers between 0 and 1
 %   2)theta: a vector of angles, has same length with r
 %   3)idx:
-%       elements should be positive integers(>=1)
-%   p: a vector of single indexes(Fringe convention) for Zernike components,
+%       elements should be integers(>=0)
+%   p: a vector of single indexes(OSA/ANSI convention) for Zernike components,
 %   c_delta: a vector or matrix (known aberration) of Zernike coefficients
 %   corresponding to p (should be normalized to phase unit: pi); if matrix,
 %   the second dimension should be N-1
@@ -24,6 +24,7 @@ function [cEstimate, imgEstimate, J] = zernretrieve(imgs, r, theta, idx, p, c_de
 %   gamma: parameter for the regularization
 %   it: iteration number
 %   GPUflag: GPU options, 0: CPU; 1: GPU;
+
 % By: Min Guo
 % July 26, 2017
 % Modification(Sep. 11, 2017, Min Guo)

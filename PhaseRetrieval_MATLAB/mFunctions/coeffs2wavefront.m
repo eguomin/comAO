@@ -1,5 +1,6 @@
-function [waveFront, phaseImg, staPara, puPara] = coeffs2wavefront(p,coeffs,Sx, pixelSize, lambda, NA, flagConfine)
-% convert Zernike coefficients (Fringe convention) to wavefront image
+function [waveFront, phaseImg, staPara, puPara] = coeffs2wavefront(p,coeffs,Sx,...
+    pixelSize, lambda, NA, flagConfine)
+% convert Zernike coefficients (OSA/ANSI convention) to wavefront image
 %
 % Output
 %   waveFront: 2D wavefront image (unit: um)
@@ -14,9 +15,9 @@ function [waveFront, phaseImg, staPara, puPara] = coeffs2wavefront(p,coeffs,Sx, 
 %       theta: angular coordinate
 %       idx: pupil index
 % Input
-%   p: a vector of single indexes(Fringe convention) for Zernike components,
-%       elements should be positive integers(>=1); (unit: um)
-%   coeffs: a vector of Zernike coefficients corresponding to p
+%   p: a vector of single indexes(OSA/ANSI convention) for Zernike components,
+%       elements should be integers(>=0); 
+%   coeffs: a vector of Zernike coefficients corresponding to p; (unit: um)
 %   Sx: phase image size, Sy = Sx
 %   pixelSize: pixel size of the intensity image
 %   lambda: wavelength (should have same unit with pixelSize; (unit: um)
@@ -26,7 +27,8 @@ function [waveFront, phaseImg, staPara, puPara] = coeffs2wavefront(p,coeffs,Sx, 
 % By: Min Guo
 % Feb. 19, 2020
 [r, theta, idx] = def_pupilcoor(Sx, pixelSize, lambda, NA);
-waveFront = zeros(Sx, Sx);
+waveFront = zeros(Sx, Sx, 'single');
+phaseImg = zeros(Sx, Sx, 'single');
 
 waveFrontVector = create_wavefront(p,coeffs,r(idx),theta(idx));
 length2phase = 2*pi/lambda;

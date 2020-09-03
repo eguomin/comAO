@@ -1,80 +1,120 @@
-function [cEstimate, imgEstimate, J] = zernretrieve_loop(imgDs, r, theta, idx,...
-    p, waveFront_deltas, c0, zernPolynomials, Rc, gamma, it, GPUflag)
+function [cEstimate, imgEstimate, J, itTotal, cInter] = zernretrieve_loop(imgDs, ...
+    r0, theta0, idx, p, waveFront_deltas, c0, zernPolynomials, Rc, ...
+    penalChioce, gamma, alpha, itLimit, stopChoice, tolValue, GPUflag, nFlag)
 % retrieve the zernike coefficients of aberrated phase based on phase
 % diversity images;
 % update formula(recurrence): 
 %                       c_i+1 = c_i + c_delta
 %                       c_delta = -H^(-1)g
 % Output
-%   cEstimate: retrieved phase coefficients(um)
+%   cEstimate: retrieved Zernike coefficients(um)
 %   imgEstimate: retrieved image
 %   J: cost function values at each iteration
+%   itTotal: actual iteration number
+%   cInter: Zernike coefficients at each iteration
 % Input
 %   imgDs: FT of phase diversity images, third dimension: N, the number of images
-%   r,theta,idx: define the pupil aperture of the wavefront
-%   1)r: a vector of numbers between 0 and 1
-%   2)theta: a vector of angles, has same length with r
+%   r0,theta0,idx: define the pupil aperture of the wavefront
+%   1)r0: a 2D matrix of numbers between 0 and 1
+%   2)theta0: a 2D matrix of angles (rad), has same size with r0
 %   3)idx:
 %       elements should be positive integers(>=1)
-%   p: a vector of single indexes(Fringe convention) for Zernike components,
+%   p: a vector of single-index Zernike coefficients,
 %   waveFront_deltas: wavefronts corresponding to phase diversity images
 %   (N)
 %   Rc: Rc matrix
-%   gamma: parameter for the regularization
-%   it: iteration number
+%   penalChioce: penalty term to image, 
+%       1 for L2 norm of image and 2 for L2 norm of gradient
+%   gamma: parameter for the regularization to image
+%   alpha: parameter for the regularization to phase
+%   itLimit: maximum iteration number
+%   stopChoice: iteration stopping criterion
+%       0: no stopping criterion;
+%       1: based on RMS of wavefront;
+%       2: based on loss function;
+%   tolValue = 0.01; % iteration stopping criterion: tolerance value
 %   GPUflag: GPU options, 0: CPU; 1: GPU;
+%   nFlag: Zernike normalization option
+
 % By: Min Guo
 % Jan 29, 2020
+% Modifications: July 1, 2020
+%   add option for L2 norm of gradient: penalChioce = 1 or 2; 
+%       1 for L2 norm to image and 2 for L2 norm to gradient
+%   modify input pupil parameters(r, theta) from 1D vectors to 2D matrix 
+% Modifications: July 18, 2020
+%   recover the option of alpha
+%   add termination criterion for the iteration
 
-alpha = 0;
-J = zeros(it, 1);
-[Sx, Sy, imgNum] = size(imgDs); % image numbers: 2
+
+r = r0(idx); % convert 2D matrix to vector with selected elements
+theta = theta0(idx); % convert 2D matrix to vector with selected elements
+
+% alpha = 0;
+[Sx, Sy, imgNum] = size(imgDs); % image size and numbers
 opNum = length(p);
 idxNum = length(r);
-
-
+J = zeros(itLimit+1, 1, 'single'); % cost function values (initial + all iterations)
+cInter = zeros(itLimit, opNum, 'single');% Zernike coefficients (all iterations)
+Jrms = zeros(itLimit, 1, 'single');
 % GPU Data transfering
 if(GPUflag==1)
-    pupilMask = zeros(Sx, Sy, 'gpuArray');
-    waveFront = zeros(Sx,Sy, 'gpuArray');
-    Hks = zeros(Sx, Sy, imgNum, 'gpuArray');
-    hks = zeros(Sx, Sy, imgNum, 'gpuArray');
-    Sks = zeros(Sx, Sy, imgNum, 'gpuArray');
+    imgInter = zeros(Sx,Sy,itLimit, 'single', 'gpuArray');
+    pupilMask = zeros(Sx, Sy, 'single', 'gpuArray');
+    waveFront = zeros(Sx,Sy, 'single', 'gpuArray');
+    Hks = zeros(Sx, Sy, imgNum, 'single', 'gpuArray');
+    hks = zeros(Sx, Sy, imgNum, 'single', 'gpuArray');
+    Sks = zeros(Sx, Sy, imgNum, 'single', 'gpuArray');
     cEstimate = gpuArray(c0);
-    opEstimate = gpuArray(c0);
-    zernPolynomial2D = zeros(Sx, Sy, 'gpuArray');
+    cDelta = zeros(size(c0),'single', 'gpuArray');
+    zernPolynomial2D = zeros(Sx, Sy, 'single', 'gpuArray');
     
-    g = zeros(opNum,1, 'gpuArray');
-    DQks = zeros(Sx, Sy, imgNum, 'gpuArray');
-    HGN_phi_ns = zeros(Sx,Sy,opNum, 'gpuArray');
-    Hmatrix = zeros(opNum,opNum, 'gpuArray');
+    g = zeros(opNum,1, 'single', 'gpuArray');
+    DQks = zeros(Sx, Sy, imgNum, 'single', 'gpuArray');
+    HGN_phi_ns = zeros(Sx,Sy,opNum, 'single', 'gpuArray');
+    Hmatrix = zeros(opNum,opNum, 'single', 'gpuArray');
     J = gpuArray(J);
+    Jrms = gpuArray(Jrms);
+    cInter = gpuArray(cInter);
 else
-    pupilMask = zeros(Sx, Sy);
-    waveFront = zeros(Sx,Sy);
+    imgInter = zeros(Sx,Sy,itLimit, 'single');
+    pupilMask = zeros(Sx, Sy, 'single');
+    waveFront = zeros(Sx,Sy, 'single');
     
-    Hks = zeros(Sx, Sy, imgNum);
-    hks = zeros(Sx, Sy, imgNum);
-    Sks = zeros(Sx, Sy, imgNum);
+    Hks = zeros(Sx, Sy, imgNum, 'single');
+    hks = zeros(Sx, Sy, imgNum, 'single');
+    Sks = zeros(Sx, Sy, imgNum, 'single');
     
     cEstimate = c0;
-    opEstimate = c0;
-    zernPolynomial2D = zeros(Sx, Sy);
-    g = zeros(opNum,1);
-    DQks = zeros(Sx, Sy, imgNum);
-    HGN_phi_ns = zeros(Sx,Sy,opNum);
-    Hmatrix = zeros(opNum,opNum);
+    cDelta = zeros(size(c0),'single');
+    zernPolynomial2D = zeros(Sx, Sy, 'single');
+    g = zeros(opNum,1, 'single');
+    DQks = zeros(Sx, Sy, imgNum, 'single');
+    HGN_phi_ns = zeros(Sx,Sy,opNum, 'single');
+    Hmatrix = zeros(opNum,opNum, 'single');
     
 end
 pupilMask(idx) = 1;
 
-for i = 1:it
+% calculate penalty term
+switch penalChioce
+    case 1
+        penalTerm = gamma;
+    case 2
+        penalTerm = gamma* r0.*r0; % gamma*u^2
+    otherwise
+        error('zernretrieve_loop: wrong penalty choice');
+end
+
+% for calculating cost function
+imgDsSq = sum(abs(imgDs).^2,3); 
+
+for i = 1:itLimit+1
     % ================== %
     % Gradient: g
     % ================== %
     c = cEstimate;
-    op = opEstimate;
-    waveFront(idx) = create_wavefront(p, c, r, theta);
+    waveFront(idx) = create_wavefront(p, c, r, theta, nFlag);
     for k = 1:imgNum
         phi = waveFront+waveFront_deltas(:,:,k); %phase
         Hk = pupilMask.*exp(1i*phi); % pupil function
@@ -86,15 +126,66 @@ for i = 1:it
         Sks(:,:,k) = Sk;       
     end
     
+    % calculate Q
+    Q = sum(abs(Sks).^2,3) + penalTerm;
+    
+    % % calculate cost function value: last iteration
+    phaseTerm = alpha*c'*Rc*c;
+    numeTerm = sum(conj(imgDs).*Sks,3);
+    tTerm = imgDsSq - (abs(numeTerm).^2)./Q;
+    J(i) = sum(tTerm(:)) + phaseTerm;
+    
+    % % % % check if termanate iteration
+    %       0: no stopping criterion;
+    %       1: based on RMS of wavefront;
+    %       2: based on loss function;
+    switch(stopChoice)
+        case 1 % based on RMS of wavefront;
+            waveFrontTemp = zernPolynomials*c;
+            Jrms(i) = rms(waveFrontTemp);
+            waveFrontTemp = zernPolynomials*cDelta;
+            rmsDelta = rms(waveFrontTemp);
+            if(i>=3)
+                if(rmsDelta >= Jrms(i)||rmsDelta >= Jrms(i-1))
+                    itTotal = i-2; % diverges, use second last estimate
+                    break;
+                end
+                if(rmsDelta/Jrms(i)<tolValue)
+                    itTotal = i-1; % converges, use last estimate
+                    break;
+                end
+            end
+        case 2 % based on RMS of wavefront;
+            Jlast = J(i);
+            if(i>=3)
+%               % compare to last two iterations to avoid fluctuations
+                if((J(i-2)<Jlast)&&(J(i-1)<Jlast)) % diverges, use second last estimate
+                    itTotal = i-2;
+                    break;   
+                end
+            end
+            if(i>=2)
+                Jdelta = abs(J(i-1) - Jlast)/abs(J(1)-Jlast);
+                if(Jdelta<tolValue)
+                    itTotal = i-1; % converges, use last estimate
+                    break;
+                end
+            end
+        otherwise % no stopping criterion;
+    end   
+    % if reach maximum iteration
+    if(i==itLimit+1)
+        itTotal = itLimit;
+        break;
+    end
+    
+    % % % % continue iterating
     % calculate F
-    temp1 = conj(Sks).*imgDs;
-    numerator = sum(temp1,3);
-    temp2 = abs(Sks).^2;
-    denominator = sum(temp2,3) + gamma;
-    F = numerator./denominator;
+    numeTerm = sum(conj(Sks).*imgDs,3);
+    F = numeTerm./Q;
     
     % calculate Vk and g[phi]
-    g_phi = zeros(idxNum,1);
+    g_phi = zeros(idxNum,1, 'single');
     if(GPUflag==1)
         g_phi = gpuArray(g_phi);
     end
@@ -122,7 +213,6 @@ for i = 1:it
     % Hessian matrix: Hmatrix
     % ======================== %
     % simplify to K=2: k=2,j=1
-    Q = denominator;
     Qsqrt = Q.^0.5;
     for k = 1:imgNum
         Dk = squeeze(imgDs(:,:,k));
@@ -182,27 +272,21 @@ for i = 1:it
     end
     
     Hmatrix = Hmatrix + alpha*Rc;
-    
-    opEstimate = op - Hmatrix\g;
-    cEstimate = opEstimate;
-    
-    
-    temp1 = abs(imgDs).^2;
-    temp1 = sum(temp1,3);
-    temp2 = conj(imgDs).*Sks;
-    temp2 = sum(temp2,3);
-    temp2 = abs(temp2).^2./Q;
-    temp3 = temp1-temp2;
-    J(i) = sum(temp3(:));
-    
+    cDelta = - Hmatrix\g;
+    cEstimate = c + cDelta;
+    cInter(i, :) = cEstimate;
     imgEstimate = real(ifft2(F));
     imgEstimate(imgEstimate<0) = 0;
+    imgInter(:,:,i) = imgEstimate;
+             
 end
-
+cEstimate = cInter(itTotal, :);
+imgEstimate = imgInter(:,:,itTotal);
 if (GPUflag == 1)
     J = gather(J);
     cEstimate = gather(cEstimate);
     imgEstimate = gather(imgEstimate);
+    cInter = gather(cInter);
 end
 
 

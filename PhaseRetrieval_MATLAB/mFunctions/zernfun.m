@@ -124,9 +124,9 @@ end
 % --------------------
 if nargin==5 && ischar(nflag)
     isnorm = strcmpi(nflag,'norm');
-    if ~isnorm
-        error('zernfun:normalization','Unrecognized normalization flag.')
-    end
+%     if ~isnorm
+%         error('zernfun:normalization','Unrecognized normalization flag.')
+%     end
 else
     isnorm = false;
 end
@@ -158,7 +158,7 @@ end
 
 % Compute the values of the polynomials:
 % --------------------------------------
-z = zeros(length_r,length(n));
+z = zeros(length_r,length(n),'single');
 for j = 1:length(n)
     s = 0:(n(j)-m_abs(j))/2;
     pows = n(j):-2:m_abs(j);

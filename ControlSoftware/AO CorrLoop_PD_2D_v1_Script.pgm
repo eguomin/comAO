@@ -1,0 +1,48 @@
+//this is for AO data acquisition
+//press Ctrl+E to run
+// trigger????
+
+a$="Andor Parameters\base_name.txt"
+read(a$,bn$)
+b$="Andor Parameters\path.txt"
+read(b$,pth$)
+c$="Andor Parameters\exps_time_s.txt"
+read(c$,et$)
+v$="Andor Parameters\avgnum.txt"
+read(v$,avgn$)
+//n$="Andor Parameters\NumofPic.txt"
+//read(n$,np$)
+k$="Andor Parameters\KineticSeriesLength.txt"
+read(k$,ks$)
+n$="Andor Parameters\SingleTriggerNumber.txt"
+read(n$,stn$)
+KSL=val(ks$)
+Sing=val(stn$)
+DataS=KSL/Sing
+r$="Andor Parameters\ROI_length.txt"
+read(r$,roil$)
+o$="Andor Parameters\ROI_start.txt"
+read(o$,rois$)
+SetImage(rois$,roil$,1,rois$,roil$,1)
+print("Data is saved in ";pth$;;bn$;)
+print("exposure time is ";et$;" second, number of accumulations is ";avgn$;", kinetic series length is ";ks$;".")
+for i = 1 to DataS step 1
+SetKinetics(et$,avgn$,0,stn$,0)
+print(DataS)
+j=i-1
+newbn$=bn$+"_"+j
+print(newbn$)
+//SetFrameTransfer(et$, avgn$, np$) //exps time 0.02s, avg#=1, # of pictures=5
+//SetImage()
+setspool(1) // Turn spooling on
+setspoolfiletype(7) // .tiff 
+setspoolstorage(0) // Spool to disk
+setspoolcompression(0) // no compression
+setspoolstem(newbn$) //set file base name
+setspoollocation(pth$) //D:\Data\
+setspoolformat(0)
+SetTriggerMode(1) //external 
+//print(ks$)
+run()
+
+next
