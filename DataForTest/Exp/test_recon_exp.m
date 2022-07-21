@@ -1,4 +1,4 @@
-% Test phase diveristy based on experimental datasets.
+% A simple example: test phase diveristy based on experimental datasets.
 %   1) recon_zern_fileIO function takes care of file IO and wavefront estimation.
 %   2) estimated wavefronts (Zernike coefficients) are sent to deformable mirror 
 %      to compensate the aberration.
@@ -6,7 +6,7 @@
 % Current setup has been verified for the exp datasets 'bead_2' and 'bead_8'
 
 % By: Min Guo, ShroffLab@NIH
-% Last update: Sep. 1, 2020
+% Last update: Mar. 11, 2022
 
 clear all;
 close all;

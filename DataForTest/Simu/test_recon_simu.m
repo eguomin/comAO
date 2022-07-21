@@ -1,20 +1,21 @@
-% Test phase diveristy based on synthetic images.
+% A simple example: test phase diveristy based on synthetic images.
 %   1) generate aberrated image (and diveristy images);
 %   2) reconstruct the aberrated wavefront (Zernike coefficients);
 %   3) show results.
 %
 % Current setup has been verified for the test dataset 'imSample1': 
-% import 'InputParameters.mat', and run the script.
+% (import 'InputParameters.mat', and commet Line 32) 
+% or users may need to cutomize their input aberrations and parameters
 
 % By: Min Guo, ShroffLab@NIH
-% Last update: Sep. 1, 2020
+% Last update: Mar. 11, 2022
 
 % % *** default settings:
 % clear all;
 % close all;
 tStart = tic;
 flagGPU = 0;
-pixelSize = 0.096; % um
+pixelSize = 0.08; % um
 lambda = 0.532; % um
 NA = 1.2;
 pIn = 3:35; % 0: piston; 1:tilt X; 2: tilt Y;
@@ -27,8 +28,7 @@ SNR = 20;
 % random zernike coefficients
 aValue = 0.1;
 zernType = 'random2'; % 'defocus','astig','coma','trefoil','sphe','random1','random2'
-% commented for test data only
-% coeffsInitial = gen_zern_coeffs(pIn,aValue,zernType);
+coeffsInitial = gen_zern_coeffs(pIn,aValue,zernType);
 
 
 % diversity images:
@@ -54,7 +54,7 @@ fileFolderIn = '..\DataForTest\Simu\';
 fileImgSample = [fileFolderIn 'imSample1.tif'];
 img0 = single(ReadTifStack(fileImgSample));
 [Sx, ~] = size(img0);
-fileFolderOut = '..\DataForTest\Simu\TestResults_2\';
+fileFolderOut = '..\DataForTest\Simu\TestResults\';
 % fileFolderOut = '..\..\..\computAO\Data\DataForTest\Simu\TestResults\';
 fileImgs = [fileFolderOut 'imgs.tif']; % image
 if isequal(exist(fileFolderOut, 'dir'),7)
@@ -77,10 +77,7 @@ coeffs_all = [coeffsInitial;coeffs_delta;];
 
 % generate phase diversity images;
 disp('...Generating simulated images...');
-% commented for test data only
-% [imgs, PSFs, waveFronts] = gen_simu_images(img0, pIn, coeffs_all, ...
-%     pixelSize, lambda, NA, nType, SNR); 
-[~, PSFs, waveFronts] = gen_simu_images(img0, pIn, coeffs_all, ...
+[imgs, PSFs, waveFronts] = gen_simu_images(img0, pIn, coeffs_all, ...
     pixelSize, lambda, NA, nType, SNR);
 cTime1 = toc(tStart);
 disp(['... ... time cost: ', num2str(cTime1)]);
