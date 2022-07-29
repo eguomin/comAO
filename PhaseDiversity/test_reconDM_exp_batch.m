@@ -56,10 +56,10 @@ alpha = 0;
 penalChioce = 1;
 % bootstrapping steps,e.g., 4th (14), 5th(20), 6th(27) and 7th(35) orders
 %     zernSteps = [14 20 27 pIn(zernNum)] - pIn(1) + 1;
-zernSteps = [14 20 pIn(zernNum)] - pIn(1) + 1;
+zernSteps = [14 pIn(zernNum)] - pIn(1) + 1;
     
 % % files and folders
-fileFolderIn = 'D:\Data\20220718_Actuator\PD_Batch_0p03_step1um_2\processed\';
+fileFolderIn = 'D:\Data\20220720_Calibration_Summary\PD_Batch_0p03_step1um_2\processed\';
 fileFolderMeasWF = 'D:\Data\20220720_Calibration_Summary\WFS_Batch_0p03\';
 fileFolderPSF = [fileFolderIn 'PSF_all\'];
 fileFolderWavefront = [fileFolderIn 'wavefront_all\'];
